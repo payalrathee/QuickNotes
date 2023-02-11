@@ -6,20 +6,44 @@ $user="root";
 $password="";
 $db="quick_notes";
 $isInserted=false;
+$isUpdated=false;
+$isDeleted=false;
 
 //establish connection
 $conn=mysqli_connect($servername,$user,$password,$db);
 
-//note insertion
-if($_SERVER['REQUEST_METHOD']=='POST')
+if(isset($_GET['delete']))
 {
-  $title=$_POST['title'];
-  $desc=$_POST['description'];
-
-  $sql="insert into note(title,description) values('$title','$desc')";
+  $id=$_GET['delete'];
+  $sql="delete from note where id=$id";
   $result=mysqli_query($conn,$sql);
   if($result)
-  $isInserted=true;
+  $isDeleted=true;
+}
+
+if($_SERVER['REQUEST_METHOD']=='POST')
+{
+  if(isset($_POST['editId']))
+  {
+      $id=$_POST['editId'];
+      $title=$_POST['titleEdit'];
+      $desc=$_POST['descriptionEdit'];
+
+      $sql="update note set title='$title', description='$desc' where id=$id";
+      $result=mysqli_query($conn,$sql);
+      if($result)
+      $isUpdated=true;
+  }
+  else
+  {
+    $title=$_POST['title'];
+    $desc=$_POST['description'];
+
+    $sql="insert into note(title,description) values('$title','$desc')";
+    $result=mysqli_query($conn,$sql);
+    if($result)
+    $isInserted=true;
+  }
 }
 ?>
 <!doctype html>
@@ -32,6 +56,38 @@ if($_SERVER['REQUEST_METHOD']=='POST')
     <link href="//cdn.datatables.net/1.13.2/css/jquery.dataTables.min.css" rel="stylesheet"/>
   </head>
   <body>
+
+<!-- Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="editModalLabel">Edit this Note</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+      <form class="container mt-3" method="post" action="/QuickNotes/index.php">
+        <input type="hidden" id="editId" name="editId">
+  <div class="mb-3">
+    <label for="titleEdit" class="form-label">Title</label>
+    <input type="text" class="form-control" id="titleEdit" aria-describedby="emailHelp" name="titleEdit">
+  </div>
+  <div class="mb-3">
+    <label for="descriptionEdit" class="form-label">Note</label>
+    <div class="form-floating">
+      <textarea class="form-control" placeholder="Leave a comment here" id="descriptionEdit" style="height: 100px" name="descriptionEdit"></textarea>
+    </div>
+  </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+</form>
+    </div>
+  </div>
+</div>
     
   <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
   <div class="container-fluid">
@@ -48,9 +104,9 @@ if($_SERVER['REQUEST_METHOD']=='POST')
           <a class="nav-link" href="#">About QuickNotes</a>
         </li>
       </ul>
-      <form class="d-flex" role="search">
+      <!-- <form class="d-flex" role="search">
         <a class="nav-item nav-link" href="#" style="color:white;">Sign Up</a> 
-      </form>
+      </form> -->
     </div>
   </div>
 </nav>
@@ -60,6 +116,22 @@ if($isInserted==true)
 echo "
 <div class='alert alert-success alert-dismissible fade show' role='alert'>
   <strong>Success!</strong> Your note has been added successfully.
+  <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+</div>"
+?>
+<?php
+if($isUpdated==true)
+echo "
+<div class='alert alert-success alert-dismissible fade show' role='alert'>
+  <strong>Success!</strong> Your note has been updated successfully.
+  <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+</div>"
+?>
+<?php
+if($isDeleted==true)
+echo "
+<div class='alert alert-success alert-dismissible fade show' role='alert'>
+  <strong>Success!</strong> Your note has been deleted successfully.
   <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
 </div>"
 ?>
@@ -104,8 +176,8 @@ echo "
           <td>".$row['description']."</td>
           <td>".$row['date']."</td>
           <td>
-          <button type='button' class='btn btn-primary'>Edit</button>
-          <button type='button' class='btn btn-danger'>Delete</button>
+          <button type='button' class='btn btn-primary edit' id=".$row['id'].">Edit</button>
+          <button type='button' class='btn btn-danger delete' id=d".$row['id'].">Delete</button>
           </td>
         </tr>";
         $count++;
@@ -127,6 +199,30 @@ echo "
       $('#myTable').DataTable();
     } );
     </script>
+    <script>
+      edits=document.getElementsByClassName("edit");
+      Array.from(edits).forEach((element)=>{
+        element.addEventListener('click',(e)=>{
+          tr=e.target.parentNode.parentNode;
+          title=tr.getElementsByTagName('td')[0].innerText;
+          description=tr.getElementsByTagName('td')[1].innerText;
+          descriptionEdit.value=description;
+          titleEdit.value=title;
+          editId.value=e.target.id;
+          $('#editModal').modal('toggle');
+        })
+      })
 
+      deletes=document.getElementsByClassName("delete");
+      Array.from(deletes).forEach((element)=>{
+        element.addEventListener('click',(e)=>{
+          id=e.target.id.substring(1,);
+          if(confirm("Are you sure you want to delete this note?"))
+          {
+            window.location=`/QuickNotes/index.php?delete=${id}`
+          }
+        })
+      })
+    </script>
   </body>
 </html>
