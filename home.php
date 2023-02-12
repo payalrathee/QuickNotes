@@ -1,16 +1,16 @@
 <?php
+require 'db_connect.php';
 
-//database connectivity variables
-$servername="localhost";
-$user="root";
-$password="";
-$db="quick_notes";
+session_start();
+
+if(!isset($_SESSION['username']))
+{
+  header('Location:login.php');
+}
+
 $isInserted=false;
 $isUpdated=false;
 $isDeleted=false;
-
-//establish connection
-$conn=mysqli_connect($servername,$user,$password,$db);
 
 if(isset($_GET['delete']))
 {
@@ -38,8 +38,9 @@ if($_SERVER['REQUEST_METHOD']=='POST')
   {
     $title=$_POST['title'];
     $desc=$_POST['description'];
+    $userId=$_SESSION['id'];
 
-    $sql="insert into note(title,description) values('$title','$desc')";
+    $sql="insert into note(title,description,user) values('$title','$desc',$userId)";
     $result=mysqli_query($conn,$sql);
     if($result)
     $isInserted=true;
@@ -56,6 +57,7 @@ if($_SERVER['REQUEST_METHOD']=='POST')
     <link href="//cdn.datatables.net/1.13.2/css/jquery.dataTables.min.css" rel="stylesheet"/>
   </head>
   <body>
+  <?php require 'base.php'; ?>
 
 <!-- Modal -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
@@ -66,7 +68,7 @@ if($_SERVER['REQUEST_METHOD']=='POST')
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-      <form class="container mt-3" method="post" action="/QuickNotes/index.php">
+      <form class="container mt-3" method="post" action="/QuickNotes/home.php">
         <input type="hidden" id="editId" name="editId">
   <div class="mb-3">
     <label for="titleEdit" class="form-label">Title</label>
@@ -88,28 +90,6 @@ if($_SERVER['REQUEST_METHOD']=='POST')
     </div>
   </div>
 </div>
-    
-  <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">QuickNotes</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="#">Home</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">About QuickNotes</a>
-        </li>
-      </ul>
-      <!-- <form class="d-flex" role="search">
-        <a class="nav-item nav-link" href="#" style="color:white;">Sign Up</a> 
-      </form> -->
-    </div>
-  </div>
-</nav>
 
 <?php
 if($isInserted==true)
@@ -136,7 +116,7 @@ echo "
 </div>"
 ?>
 
-<form class="container mt-3" method="post" action="/QuickNotes/index.php">
+<form class="container mt-3" method="post" action="/QuickNotes/home.php">
     <h2>Add a Note</h2>
   <div class="mb-3">
     <label for="title" class="form-label">Title</label>
@@ -164,7 +144,7 @@ echo "
   </thead>
   <tbody>
     <?php
-      $sql="select * from note";
+      $sql="select * from note where user='".$_SESSION['id']."'";
       $result=mysqli_query($conn,$sql);
       $count=1;
       while($row=mysqli_fetch_assoc($result))
@@ -219,7 +199,7 @@ echo "
           id=e.target.id.substring(1,);
           if(confirm("Are you sure you want to delete this note?"))
           {
-            window.location=`/QuickNotes/index.php?delete=${id}`
+            window.location=`/QuickNotes/home.php?delete=${id}`
           }
         })
       })
